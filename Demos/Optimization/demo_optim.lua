@@ -1,6 +1,35 @@
---[[ Test the xtrain package
+--[[
+Quasi-Newton methods and SGD demo
 By Xiang Zhang @ New York University
 Version 0.1, 02/04/2013
+
+DOCUMENTATION
+
+These demos require the following packages:
+xlua, optim
+They can be installed using the torch-pkg command
+
+To try different models, please edit the 'model' variable. The model could be
+anything following the nn.Module protocol.
+
+To try different loss functions, please edit the 'loss' variable. The loss
+could be anything following the nn.Criterion protocol.
+
+To try different training mechanisms, please edit the 'trainer' variable. We
+have three simple trainers: xtrain.stochastic, xtrain.batch, xtrain.minibatch.
+It is recommended to use xtrain.batch or xtrain.minibatch if quasi-Newton
+method (such as bfgs, lbfgs, cg) is used.
+
+To try different learning algorithms, please edit the 'optalg' variable. You
+can change it to optim.sgd, optim.cg, optim.bfgs, optim.lbfgs, etc.
+
+To try different regularization methods, please edit the 'regu' variable. You
+can change it to reguL2(lambda), reguL1(lambda) or reguNone(). 'lambda' is the
+regularization parameter. regu == nil is equivalent to regu == reguNone().
+
+Other changes (such as how the training samples are drawn and the size of a
+minibatch) could be made by finding the appropriate variables. Please take
+your time to read the code a bit.
 ]]
 
 
