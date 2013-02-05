@@ -54,6 +54,8 @@ end
 function minibatch:train(dataset, epoch)
    -- Retrieve parameters and gradients
    local w, dw = self.model:getParameters()
+   -- Build history records
+   local wtable = {torch.Tensor(w:size()):copy(w)}
    -- Iterate over epoches
    for t = 1, epoch do
       -- Display progress
@@ -87,9 +89,12 @@ function minibatch:train(dataset, epoch)
       end
       -- Optimize current iteration
       self.optalg(feval, w, self.state)
+      -- Record the current parameter
+      wtable[#wtable+1] = torch.Tensor(w:size()):copy(w)
    end
+   error, loss = self:test(dataset)
    -- Return testing results
-   return self:test(dataset)
+   return error,loss, wtable
 end
 
 -- Test on a dataset. Return value is error, loss pair.
@@ -115,7 +120,7 @@ function minibatch:test(dataset)
       loss = loss/i*(i-1) + self.loss:forward(output, dataset[i][2])/i
    end
    -- Add the regularization
-   loss = loss + r
+   loss = loss + r/self.config.batchSize
    -- Return the values
    return err, loss
 end

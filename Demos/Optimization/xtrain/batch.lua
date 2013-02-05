@@ -111,7 +111,7 @@ function batch:test(dataset)
       loss = loss/i*(i-1) + self.loss:forward(output, dataset[i][2])/i
    end
    -- Add the regularization
-   loss = loss + r
+   loss = loss + r/dataset:size()
    -- Return the values
    return err, loss
 end

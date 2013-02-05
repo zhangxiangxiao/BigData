@@ -37,6 +37,11 @@ your time to read the code a bit.
 require("nn")
 require("optim")
 require("gnuplot")
+require("qt")
+require("qttorch")
+require("qtwidget")
+require("qtuiloader")
+require("image")
 
 -- Load the xtools library. Fixing bugs of torch and etc.
 dofile("xtools.lua")
@@ -51,26 +56,33 @@ dofile("gaussdata.lua")
 -- Load regularizers
 dofile("regu.lua")
 
+-- Load extra criteria
+if nn.MMSECriterion == nil then dofile("criteria.lua") end
+
 -- Configuration of datasets
-local train_size = 3000
-local test_size = 1000
-local centers = {torch.Tensor({3,3}), torch.Tensor({-3,-3})}
-local covs = {torch.eye(2)*2, torch.eye(2)*3}
+local train_size = 500
+local test_size = 100
+local centers = {torch.Tensor({2,1}), torch.Tensor({-1,-2})}
+local covs = {torch.eye(2)*10, torch.eye(2)*7}
 local labels = {-1,1}
 
 -- Configuration of model
 local model = nn.Linear(2,1)
 
 -- Configuration of loss
-local loss = nn.MarginCriterion(1)
+--local loss = nn.MarginCriterion(1)
+local loss = nn.MMSECriterion()
 
 -- Configuration of regularizer
 local regu = reguL2(0.05)
 
 -- Configuration of optimizer
 local state = {}
+-- If you want to use different training ratio for the weights
+-- state.learningRates = torch.Tensor{1/2,1,1}
+state.learningRate = 0.005
 -- Optimization algorithm used is optim.sgd
-local optalg = optim.lbfgs
+local optalg = optim.sgd
 
 
 -- Configuration of trainer
@@ -86,9 +98,13 @@ local trainer = xtrain.minibatch(model, loss, regu, decfunc, errfunc, optalg, st
 local epoches = 100
 
 -- Start training
+-- Set the parameter initial values
+local params, grads = model:getParameters()
+params[1] = -0.5
+params[2] = 0.5
 local data_train, data_test = gaussdata:getDatasets(train_size, test_size, centers, convs, labels)
 -- Train for epoches steps
-local error_train, loss_train = trainer:train(data_train, epoches)
+local error_train, loss_train, wtable = trainer:train(data_train, epoches)
 -- Test on testing data
 local error_test, loss_test = trainer:test(data_test)
 
@@ -99,17 +115,19 @@ print("loss_train = "..loss_train)
 print("loss_test = "..loss_test)
 
 -- Plotting configurations
-local xrange = {-10,10}
-local yrange = {-10,10}
+local xrange = {-1,1}
+local yrange = {-1,1}
+local gridSize = 25
 
 -- This function generates energy for one sample
 local enefunc = function(input)
-   -- Forward propagation on the sample
-   local output = model:forward(input)
-   -- Get the decision of the sample
-   local decision = decfunc(output)
-   -- Get the energy
-   local energy = loss:forward(output, decision)
+   -- Get the parameters of the model
+   local w, dw = model:getParameters()
+   -- Modify the weight parameters
+   w[1] = input[1]
+   w[2] = input[2]
+   -- Get the training loss
+   local error, energy = trainer:test(data_train)
    -- Return the energy
    return energy
 end
@@ -128,6 +146,7 @@ local gridfunc = function(xgrid, ygrid)
    -- Compute the energies
    local z = torch.zeros(ygrid:size(1), xgrid:size(1))
    for i = 1,z:size(1) do
+      xlua.progress(i, z:size(1))
       for j = 1,z:size(2) do
 	 local input = torch.Tensor{x[{i,j}],y[{i,j}]}
 	 z[{i,j}] = enefunc(input)
@@ -138,7 +157,57 @@ local gridfunc = function(xgrid, ygrid)
 end
 
 -- Generate grid and plot
-local xgrid = torch.linspace(xrange[1],xrange[2])
-local ygrid = torch.linspace(yrange[1],yrange[2])
+gnuplot.figure(1)
+local xgrid = torch.linspace(xrange[1],xrange[2],gridSize)
+local ygrid = torch.linspace(yrange[1],yrange[2],gridSize)
 local x,y,z = gridfunc(xgrid,ygrid)
 gnuplot.splot(x,y,z)
+
+-- Generate the energy associated with the weights
+local plotfunc = function (wtable)
+   -- Build x, and y values as tables of tensors
+   local x = torch.Tensor(#wtable)
+   local y = torch.Tensor(#wtable)
+   local z = torch.Tensor(#wtable)
+   -- Iterate over all the values in wtable
+   for i = 1, #wtable do
+      xlua.progress(i,#wtable)
+      x[i] = wtable[i][1]
+      y[i] = wtable[i][2]
+      z[i] = enefunc(wtable[i])
+   end
+   return x,y,z
+end
+
+-- Get the tracks of variables
+local xtrack, ytrack,ztrack = plotfunc(wtable)
+-- Plot these tracks
+gnuplot.figure(2)
+for i = 2,xtrack:size(1) do
+   gnuplot.plot(xtrack[{{1,i}}],ytrack[{{1,i}}],"+-")
+end
+gnuplot.figure(3)
+gnuplot.plot(ztrack,"+-")
+
+-- Mark the values on the energy surface
+local zene = (z-z:min())/(z:max()-z:min())
+zene:pow(0.2)
+-- Draw using Qt widget
+local width = 600
+local height = 600
+local colors = {"red","blue"}
+local w = qtwidget.newwindow(width,height,"Energy surface")
+local qimg = qt.QImage.fromTensor(image.scale(zene,width,height))
+w:image(0,0,qimg)
+w:stroke()
+local xindex = (wtable[1][1]-xrange[1])/(xrange[2]-xrange[1])*width
+local yindex = (wtable[1][2]-yrange[1])/(yrange[2]-yrange[1])*height
+w:setlinewidth(5)
+for i = 2,#wtable do
+   w:setcolor(colors[math.mod(i,2)+1])
+   w:moveto(xindex,yindex)
+   xindex = (wtable[i][1]-xrange[1])/(xrange[2]-xrange[1])*width
+   yindex = (wtable[i][2]-yrange[1])/(yrange[2]-yrange[1])*height
+   w:lineto(xindex,yindex)
+   w:stroke()
+end
