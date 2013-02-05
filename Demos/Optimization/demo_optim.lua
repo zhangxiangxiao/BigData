@@ -86,7 +86,7 @@ local optalg = optim.sgd
 
 
 -- Configuration of trainer
-local config = {batchSize = 50}
+local config = {batchSize = 1}
 -- Decision function is sign for binary linear classification
 local decfunc = function(output) return torch.sign(output)[1] end
 -- Error is equality comparison
@@ -95,7 +95,7 @@ local errfunc = function(decision, label) return decision == label and 0 or 1 en
 local trainer = xtrain.minibatch(model, loss, regu, decfunc, errfunc, optalg, state, config)
 
 -- Configuration of training
-local epoches = 100
+local epoches = 2*train_size
 
 -- Start training
 -- Set the parameter initial values
@@ -183,9 +183,7 @@ end
 local xtrack, ytrack,ztrack = plotfunc(wtable)
 -- Plot these tracks
 gnuplot.figure(2)
-for i = 2,xtrack:size(1) do
-   gnuplot.plot(xtrack[{{1,i}}],ytrack[{{1,i}}],"+-")
-end
+gnuplot.plot(xtrack,ytrack,"+-")
 gnuplot.figure(3)
 gnuplot.plot(ztrack,"+-")
 
@@ -203,8 +201,13 @@ w:stroke()
 local xindex = (wtable[1][1]-xrange[1])/(xrange[2]-xrange[1])*width
 local yindex = (wtable[1][2]-yrange[1])/(yrange[2]-yrange[1])*height
 w:setlinewidth(5)
+local colorvar = 1
+w:setcolor(colors[math.mod(colorvar,2)+1])
 for i = 2,#wtable do
-   w:setcolor(colors[math.mod(i,2)+1])
+   if i >= colorvar*data_train:size() then
+      colorvar = colorvar + 1
+      w:setcolor(colors[math.mod(colorvar,2)+1])
+   end
    w:moveto(xindex,yindex)
    xindex = (wtable[i][1]-xrange[1])/(xrange[2]-xrange[1])*width
    yindex = (wtable[i][2]-yrange[1])/(yrange[2]-yrange[1])*height
