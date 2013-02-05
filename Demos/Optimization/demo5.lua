@@ -80,9 +80,9 @@ local regu = reguL2(0.05)
 local state = {}
 -- If you want to use different training ratio for the weights
 -- state.learningRates = torch.Tensor{1/2,1,1}
--- state.learningRate = 0.00005
+state.learningRate = 0.0001
 -- Optimization algorithm used is optim.sgd
-local optalg = optim.bfgs --(!DIVERGES@!!!!)
+local optalg = optim.bfgs
 
 
 -- Configuration of trainer
@@ -95,7 +95,7 @@ local errfunc = function(decision, label) return decision == label and 0 or 1 en
 local trainer = xtrain.minibatch(model, loss, regu, decfunc, errfunc, optalg, state, config)
 
 -- Configuration of training
-local epoches = 1
+local epoches = 40
 
 -- Start training
 -- Set the parameter initial values
