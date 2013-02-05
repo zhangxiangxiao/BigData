@@ -1,0 +1,11 @@
+1. Batch gradient
+	1. diverging
+	2. Nice
+	3. Oscillating
+2. Stochastic gradient descent:
+	1. too small
+	2. diverging
+	3. okay
+3. Batch LBFGS
+4. Batch CG
+5. Batch BFGS
