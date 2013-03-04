@@ -30,7 +30,7 @@
 \begin{questions}
 \question[20] (Semantics of loss functions in binary linear classification) In binary classification we are usually given a dataset \(S\) with samples \((x,y) \in S\) such that \(x \in \mathbb{R}^n\) and \(y \in \{-1,+1\}\), to learn a classifier \(y = h(x)\) where \(h\) is chosen from some hypothesis class \(H\). In the case of binary linear classification, \(h\) is parameterized by a vector \(w \in \mathbb{R}^n\) such that \(h_w (x) = w^T x\). The decision is made by the rule \(g(x) = \text{sign} (h_w(x)) = \text{sign} (w^T x)\) for some \(w\) that was learnt. It is worth noting that if we define a function \(f(w,x,y) = y \cdot h_w(x) = y \cdot w^T x\), the following observation holds if given \(x\), by the fact that \(y \in \{-1,+1\}\):
 \[
-\sup_{y\in\{-1,+1\}} f(w,x,y) =\text{sign} (w^T x) = g(x).
+\underset{y\in\{-1,+1\}}{\text{argmax}} f(w,x,y) =\text{sign} (w^T x) = g(x).
 \]
 As a result, given a sample \((x,y)\), some weight vector \(w\) correctly classifies it if \(f(w,x,y) > 0\).
 \begin{parts}
@@ -58,8 +58,8 @@ L(w,S_0) = \frac{1}{|S_0|} \sum_{(x,y) \in S_0} |y-h_w(x)|.
 Assume \(|S_0| = 2m\), where \(m \in \mathbb{N} \). Show that \(L(w,S_0)\) is minimized if we found an \(h_w\) such that \(S_0\) is separated into two disjoint sets \(S_-\) and \(S_+\), for which \(|S_-| = |S_+| = m\) and the following holds
 \[
 \begin{aligned}
-\sup_{(x,y) \in S_-} y &< h_w (x), \\
-\inf_{(x,y) \in S_+} y &> h_w (x).
+\sup_{(x,y) \in S_-} y &< h_w (x_0), \\
+\inf_{(x,y) \in S_+} y &> h_w (x_0).
 \end{aligned}
 \]
 This means that the algorithm will try to make \(h_w(x_0)\) the empirical median for \(y\) conditioned by \(x_0\). (Please assume \(y \in \mathbb{R}\) for this part.)
